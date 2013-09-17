@@ -1,169 +1,282 @@
 <html>
 	<header>
+	<!-- 
+	This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with this program.  If not, see <http://www.gnu.org/licenses/>.
+	-->
+    	<link rel="stylesheet" type="text/css" href="stylesheets/stylesheet.css" media="screen" />
+    	<link rel="stylesheet" type="text/css" href="stylesheets/pygment_trac.css" media="screen" />
+    	<link rel="stylesheet" type="text/css" href="stylesheets/print.css" media="print" />		
+		
 		<script src="javascripts/raphael.js"></script>
 		 <style type="text/css">  
             #canvas_container {  
                 width: 500px;
                 height: 500px;  
-                border: 1px solid #aaa;  
+                border: 0px solid #000;
+                float: left;  
             }  
+            #cockpit_container {  
+                width: 500px;
+                height: 500px;  
+                border: 0px solid #000;
+                float: left;  
+            } 
+            #inputColorScheme{
+            	
+            }
+            #inputColorClass {  
+                visibility : hidden;
+            }             
         </style>
 	<header>
-	<body>
+	<body onLoad="updateDrawing();">
+		<div id="cockpit_container">
+			<form id="cockpit_container">
+			<h3>Cockpit</h3>
+			<p>Zoom: <input type="text" id="inputZoom" value="150"/></p>
+			<p>Static circle radius: <input type="text" id="inputStaticCircleRadius" value="1"/></p>
+			<p>Moving circle radius: <input type="text" id="inputMovingCircleRadius" value="10/13"/></p>
+			<p>Distance drawing tip: <input type="text" id="inputDistanceDrawingTip" value="11/13"/></p>
+			
+			<p><input type="checkbox" id="inputClearCanvas" checked="checked"/> Clear canvas</p>
+			
+			<p> Color scheme
+				<select id="inputColorScheme" onChange="showHideColors();">
+  					<option value="degradation">Color degradation</option>
+  					<option value="greyDegradation">Monochrome degradation</option>
+  					<option value="funcolors">Fun colors</option>
+  					<option value="rainbow">Rainbow</option>
+  					<option value="default" selected="true">Default</option>
+				</select>
+				<div id="inputColorClass">
+				<select id="inputColor">
+  					<option value="red" selected="true">Red</option>
+  					<option value="green">Green</option>
+  					<option value="blue">Blue</option>
+				</select>
+				</div>
+			</p>
+			
+			<input type="submit" id="applyChanges" onClick="updateDrawing(); return false;"/><input type="reset" id="resetChanges"/>
+			</form>
+		</div>
+
 		<div id="canvas_container"></div>
 		
 		<script type="text/javascript">
 		
-			var canvasSize = 500;
-			var centerCanvas = canvasSize / 2;
-			var canvasColor = '#FFF';
-
-			// amplification of view
-			var zoom = 150;
-
-			// radius of static circle
-			var R = 1 * zoom;
-			// radius of moving circle 
-			var r = 10/13 * zoom;
-			// distance from radius of moving circle of drawing point
-			var d = 11/13 * zoom;
+			function updateDrawing(){
+				CurveDrawer.zoom = parseFloat(document.getElementById("inputZoom").value);
+				CurveDrawer.staticCircleRadius = parseFloat(document.getElementById("inputStaticCircleRadius").value);
+				CurveDrawer.movingCircleRadius = parseFloat(eval(document.getElementById("inputMovingCircleRadius").value));
+				CurveDrawer.distanceDrawingTip = parseFloat(eval(document.getElementById("inputDistanceDrawingTip").value));
+				CurveDrawer.clearCanvas = document.getElementById("inputClearCanvas").checked;
+				CurveDrawer.colorScheme = document.getElementById("inputColorScheme").options[document.getElementById("inputColorScheme").selectedIndex].value;
+				CurveDrawer.colorDegradation = document.getElementById("inputColor").options[document.getElementById("inputColor").selectedIndex].value;
+		
+				CurveDrawer.draw();
+			}
+		
+			function showHideColors(){
 			
-			// spin size of moving circle
-			var rotation = 2.5;
-			
-			var circlesDistance = R - r;
-			
-			var angleTransformation =  Math.PI / 200;
-			
-			var red = 0;
-			var green = 0;
-			var blue = 0;
-			var strokeWidth = 1;
-			
-			
-			var paper = Raphael("canvas_container", canvasSize,canvasSize);
-			paper.canvas.style.backgroundColor = canvasColor;
-			
-			function draw(){
-			
-				firstPoint = calculatePoint(0);
+				var selectedColorScheme = document.getElementById("inputColorScheme").options[document.getElementById("inputColorScheme").selectedIndex].value;
 				
-				angle = rotation;
-			
-				var keepOnDrawing = true;
-				var lastPoint = firstPoint;
+				if(selectedColorScheme == "degradation") {
+					CurveDrawer.red = 255;
+					CurveDrawer.blue = 255;
+					CurveDrawer.green = 255;
+					document.getElementById("inputColorClass").style.visibility = "visible";
+				} else {
+					document.getElementById("inputColorClass").style.visibility = "hidden";
+				}
+			}	
+		
+			var CurveDrawer = 
+			{
+				canvasSize : 500,			
+				canvasColor : '#FFF',
+				clearCanvas : true,
 				
-				do {
-					currentPoint = calculatePoint(angle);
-					
-					//colorRainbow(angle);						
-					//greyscaleDegradation(angle);
-					//red = 255; // move to line 56
-					//colorDegradation(angle, "red");
-						
-					red = funColors(angle);
-					blue = 154;
-					green = 75; 
-					
-					var color = "rgb(" + red + ", " + green + ", " + blue + ")";
-					
-					drawLine(lastPoint[0], lastPoint[1], currentPoint[0], currentPoint[1], color);
-										
-					keepOnDrawing = (currentPoint[0] != firstPoint[0]) || (currentPoint[1] != firstPoint[1]);
-					
-					if(keepOnDrawing) {						
+				// amplification of view
+				zoom : 150,
 
-						angle = angle + rotation;
-						
-						lastPoint = currentPoint;
+				// radius of static circle
+				staticCircleRadius : 1,
+				// radius of moving circle 
+				movingCircleRadius : 10/13,
+				// distance from radius of moving circle of drawing point
+				distanceDrawingTip : 11/13,
+			
+				// spin step size of moving circle
+				rotation : 2.5,
+			
+				// shorthand
+				angleTransformation :  Math.PI / 200,
+			
+				//colors
+				red : 0,
+				green : 0,
+				blue : 0,
+				// width of line
+				strokeWidth : 1,
+				
+				colorScheme : 'default',
+				colorDegradation : 'red',
 
+			    paper : Raphael("canvas_container", this.canvasSize, this.canvasSize),
+	
+				R : function() {
+					return this.staticCircleRadius * this.zoom;
+				},
+			
+				r : function() {
+					return this.movingCircleRadius * this.zoom;
+				},
+			
+				d: function() {
+					return this.distanceDrawingTip * this.zoom;
+				},
+				
+				centerCanvas: function(){
+					return this.canvasSize / 2;
+				},
+				
+				calculatePoint :function (angle){
+					var circlesDistance = this.R() - this.r();
+			    	var calculatedAngle = angle * this.angleTransformation;
+					var tmpCalc = (circlesDistance/this.r()) * calculatedAngle;
+				
+					var pointX = circlesDistance * Math.cos(calculatedAngle) + this.d() * Math.cos(tmpCalc);
+					var pointY = circlesDistance * Math.sin(calculatedAngle) - this.d() * Math.sin(tmpCalc);
+
+					return [parseFloat(pointX.toFixed(2)), parseFloat(pointY.toFixed(2))];				
+				},
+			
+				drawLine: function (x, y, nextX, nextY, color){
+			    	var line = this.paper.path( ["M", x + this.centerCanvas(), y + this.centerCanvas(), 
+			    		"L", nextX + this.centerCanvas(), nextY + this.centerCanvas()]);
+			    	line.attr ("stroke", color);
+			    	line.attr("stroke-width", this.strokeWidth);
+				},
+			
+				colorRainbow: function (angle) {
+					this.blue = (angle * 2) % 255;
+					this.green = (angle * 2) % 510;
+				
+					if(this.green > 254) {
+						this.green = 510 - this.green;
+					}
+				
+					this.red = (angle * 4) % 255;
+				},
+			
+				greyscaleDegradation: function (angle){
+					this.blue = angle % 510;
+						
+					if(this.blue > 254) {
+						this.blue = 510 - this.blue;
 					}
 					
-				} while(keepOnDrawing);	
-			}
-		
-			function calculatePoint(angle){
-				
-			    var calculatedAngle = angle * angleTransformation;
-				var tmpCalc = (circlesDistance/r) * calculatedAngle;
-			
-				var pointX = circlesDistance * Math.cos(calculatedAngle) + d * Math.cos(tmpCalc);
-				var pointY = circlesDistance * Math.sin(calculatedAngle) - d * Math.sin(tmpCalc);
-				
-				return [parseFloat(pointX.toFixed(2)), parseFloat(pointY.toFixed(2))];
-				
-			}
-			
-			function drawLine(x, y, nextX, nextY, color){
-			    var line = paper.path( ["M", x + centerCanvas, y + centerCanvas, "L", 
-			    	nextX + centerCanvas, nextY + centerCanvas]);
-			    line.attr ("stroke", color);
-			    line.attr("stroke-width", strokeWidth);
-			}
-			
-			function colorRainbow(angle) {
-				blue = (angle * 2) % 255;
-				
-				green = (angle * 2) % 510;
-				
-				if(green > 254) {
-					green = 510 - green;
-				}
-				
-				red = (angle * 4) % 255;
-			
-			}
-			
-			function greyscaleDegradation(angle){
-						blue = angle % 510;
+					this.green = angle % 510;
 						
-						if(blue > 254) {
-							blue = 510 - blue;
-						}
+					if(this.green > 254) {
+						this.green = 510 - this.green;
+					}
+						
+					this.red = angle % 510;
+						
+					if(this.red > 254) {
+						this.red = 510 - this.red;
+					}
+				},
+			
+				funColors: function (angle) {
+					var module = 420;	
+					var color = angle % module;
+				
+					if(color > (module / 2)) {
+						color = (module - color);
+					}
+				
+					return color;
+				},
+			
+				degradateColor: function (angle){
 					
-						green = angle % 510;
+					var color = this.funColors(angle);
+				
+					if(this.colorDegradation != "blue") {
+						this.blue = color;
+					}
+				
+					if(this.colorDegradation != "green") {	
+						this.green = color;	
+					}
+				
+					if(this.colorDegradation != "red") {			
+						this.red = color;
+					}
+				},
+				
+				draw: function (){
+					if(this.clearCanvas) {
+						this.paper.clear(); 
+					}
+					
+					this.paper.canvas.style.backgroundColor = this.canvasColor;
+					
+					var firstPoint = this.calculatePoint(0);
+					var lastPoint = firstPoint;
+					var angle = this.rotation;
+					var keepOnDrawing = true;
+										
+					do {
+						var currentPoint = this.calculatePoint(angle);
 						
-						if(green > 254) {
-							green = 510 - green;
+						this.applyColorScheme(angle);					
+						var color = "rgb(" + this.red + ", " + this.green + ", " + this.blue + ")";
+					
+						this.drawLine(lastPoint[0], lastPoint[1], currentPoint[0], currentPoint[1], color);
+										
+						keepOnDrawing = (currentPoint[0] != firstPoint[0]) || (currentPoint[1] != firstPoint[1]);
+					
+						if(keepOnDrawing) {						
+							angle = angle + this.rotation;
+							lastPoint = currentPoint;
 						}
-						
-						red = angle % 510;
-						
-						if(red > 254) {
-							red = 510 - red;
-						}
-			}
-			
-			function funColors(angle) {
-				var module = 420;
-			
-				var color = angle % module;
+					} while(keepOnDrawing);	
+				},
 				
-				if(color > (module / 2)) {
-					color = (module - color);
-				}
-				
-				return color;
-			}
-			
-			function colorDegradation(angle, skipColor){
-				var color = funColors(angle);
-				
-				if(skipColor != "blue") {
-						blue = color;
-				}
-				
-				if(skipColor != "green") {	
-						green = color;
-						
-				}
-				
-				if(skipColor != "red") {		
-						red = color;
-				}
-			}
-		
-			draw();
+				applyColorScheme: function(angle){
+					
+					if(this.colorScheme == "degradation") {
+						this.degradateColor(angle); // 2
+					} else if(this.colorScheme == "greyDegradation") {
+						this.greyscaleDegradation(angle); // 3
+					}  else if(this.colorScheme == "rainbow"){
+					 	this.colorRainbow(angle); // 4
+					} else if(this.colorScheme == "funcolors") {
+						this.blue = 154; // random?
+						this.green = 75; // random?
+						this.red = this.funColors(angle); // makes degradation	
+					} else {
+						this.blue = 0; //1
+						this.green = 0; //1
+						this.red = 0; //1	
+					}
+				}				
+			};
 		</script>
 	</body>
 </html>

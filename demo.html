@@ -14,6 +14,7 @@
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 	-->
+		
 		<script src="javascripts/raphael.js"></script>
 		 <style type="text/css">  
             #canvas_container {  
@@ -22,23 +23,79 @@
                 border: 0px solid #000;
                 float: left;  
             }  
-            #cockpit {  
+            #cockpit_container {  
                 width: 500px;
                 height: 500px;  
-                border: 1px solid #000;
-                float: left;   
+                border: 0px solid #000;
+                float: left;  
             } 
+            #inputColorScheme{
+            	
+            }
+            #inputColorClass {  
+                visibility : hidden;
+            }             
         </style>
 	<header>
-	<body>
-		<div id="cockpit">Cockpit</div>
+	<body onLoad="updateDrawing();">
+		<div id="cockpit_container">
+			<form id="cockpit">
+			<h3>Cockpit</h3>
+			<p>Zoom: <input type="text" id="inputZoom" value="150"/></p>
+			<p>Static circle radius: <input type="text" id="inputStaticCircleRadius" value="1"/></p>
+			<p>Moving circle radius: <input type="text" id="inputMovingCircleRadius" value="10/13"/></p>
+			<p>Distance drawing tip: <input type="text" id="inputDistanceDrawingTip" value="11/13"/></p>
+			
+			<p><input type="checkbox" id="inputClearCanvas" checked="checked"/> Clear canvas</p>
+			
+			<p> Color scheme
+				<select id="inputColorScheme" onChange="showHideColors();">
+  					<option value="degradation">Color degradation</option>
+  					<option value="greyDegradation">Monochrome degradation</option>
+  					<option value="funcolors">Fun colors</option>
+  					<option value="default" selected="true">Default</option>
+				</select>
+				<div id="inputColorClass">
+				<select id="inputColor">
+  					<option value="red">Red</option>
+  					<option value="green">Green</option>
+  					<option value="blue">Blue</option>
+				</select>
+				</div>
+			</p>
+			
+			<input type="submit" id="applyChanges" onClick="updateDrawing(); return false;"/><input type="reset" id="resetChanges"/>
+			</form>
+		</div>
 		<div id="canvas_container"></div>
 		
 		<script type="text/javascript">
+		
+			function updateDrawing(){
+				CurveDrawer.zoom = parseFloat(document.getElementById("inputZoom").value);
+				CurveDrawer.staticCircleRadius = parseFloat(document.getElementById("inputStaticCircleRadius").value);
+				CurveDrawer.movingCircleRadius = parseFloat(eval(document.getElementById("inputMovingCircleRadius").value));
+				CurveDrawer.distanceDrawingTip = parseFloat(eval(document.getElementById("inputDistanceDrawingTip").value));
+				CurveDrawer.clearCanvas = document.getElementById("inputClearCanvas").checked;
+				
+				CurveDrawer.draw();
+			}
+		
+			function showHideColors(){
+				var selectedColorScheme = document.getElementById("inputColorScheme").options[document.getElementById("inputColorScheme").selectedIndex].value;
+				alert(selectedColorScheme == "degradation");
+				if(selectedColorScheme == "degradation") {
+					document.getElementById("inputColorClass").visibility = "visible";
+				} else {
+					document.getElementById("inputColorClass").visibility = "hidden";
+				}
+			}	
+		
 			var CurveDrawer = 
 			{
 				canvasSize : 500,			
 				canvasColor : '#F0F',
+				clearCanvas : true,
 				
 				// amplification of view
 				zoom : 150,
@@ -62,6 +119,8 @@
 				blue : 0,
 				// width of line
 				strokeWidth : 1,
+				
+				colorScheme : 'default',
 
 			    paper : Raphael("canvas_container", this.canvasSize, this.canvasSize),
 	
@@ -158,6 +217,10 @@
 				},
 				
 				draw: function (){
+					if(this.clearCanvas) {
+						this.paper.clear(); 
+					}
+					
 					this.paper.canvas.style.backgroundColor = this.canvasColor;
 					
 					var firstPoint = this.calculatePoint(0);
@@ -192,8 +255,6 @@
 					} while(keepOnDrawing);	
 				}				
 			};
-		
-			CurveDrawer.draw();
 		</script>
 	</body>
 </html>

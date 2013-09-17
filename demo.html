@@ -48,6 +48,7 @@
 			<p>Static circle radius: <input type="text" id="inputStaticCircleRadius" value="1"/></p>
 			<p>Moving circle radius: <input type="text" id="inputMovingCircleRadius" value="10/13"/></p>
 			<p>Distance drawing tip: <input type="text" id="inputDistanceDrawingTip" value="11/13"/></p>
+			<p>Center point of shape (x,y): <input type="text" id="inputCenterCanvasX" value="250"/> <input type="text" id="inputCenterCanvasY" value="250"/></p>
 			
 			<p><input type="checkbox" id="inputClearCanvas" checked="checked"/> Clear canvas</p>
 			
@@ -84,6 +85,8 @@
 				CurveDrawer.clearCanvas = document.getElementById("inputClearCanvas").checked;
 				CurveDrawer.colorScheme = document.getElementById("inputColorScheme").options[document.getElementById("inputColorScheme").selectedIndex].value;
 				CurveDrawer.colorDegradation = document.getElementById("inputColor").options[document.getElementById("inputColor").selectedIndex].value;
+				CurveDrawer.centerCanvasX = parseFloat(document.getElementById("inputCenterCanvasX").value);
+				CurveDrawer.centerCanvasY = parseFloat(document.getElementById("inputCenterCanvasY").value);
 		
 				CurveDrawer.draw();
 			}
@@ -120,6 +123,11 @@
 			
 				// spin step size of moving circle
 				rotation : 2.5,
+				// starting angle to spin from
+				startAngle : 0,
+				
+				centerCanvasX : 200,
+				centerCanvasY : 100,
 			
 				// shorthand
 				angleTransformation :  Math.PI / 200,
@@ -157,17 +165,18 @@
 			    	var calculatedAngle = angle * this.angleTransformation;
 					var tmpCalc = (circlesDistance/this.r()) * calculatedAngle;
 				
-					var pointX = circlesDistance * Math.cos(calculatedAngle) + this.d() * Math.cos(tmpCalc);
+					var pointX =  circlesDistance * Math.cos(calculatedAngle) + this.d() * Math.cos(tmpCalc);
 					var pointY = circlesDistance * Math.sin(calculatedAngle) - this.d() * Math.sin(tmpCalc);
 
 					return [parseFloat(pointX.toFixed(2)), parseFloat(pointY.toFixed(2))];				
 				},
 			
 				drawLine: function (x, y, nextX, nextY, color){
-			    	var line = this.paper.path( ["M", x + this.centerCanvas(), y + this.centerCanvas(), 
-			    		"L", nextX + this.centerCanvas(), nextY + this.centerCanvas()]);
+			    	var line = this.paper.path( ["M", x + this.centerCanvasX, y + this.centerCanvasY, 
+			    		"L", nextX + this.centerCanvasX, nextY + this.centerCanvasY]);
 			    	line.attr ("stroke", color);
 			    	line.attr("stroke-width", this.strokeWidth);
+			    	this.paper.rotate(10);
 				},
 			
 				colorRainbow: function (angle) {
@@ -240,6 +249,11 @@
 					var lastPoint = firstPoint;
 					var angle = this.rotation;
 					var keepOnDrawing = true;
+					
+					if(this.colorScheme == "funcolors") {
+						this.blue = Math.floor((Math.random()*256)); 
+						this.green = Math.floor((Math.random()*256));
+					}
 										
 					do {
 						var currentPoint = this.calculatePoint(angle);
@@ -267,8 +281,6 @@
 					}  else if(this.colorScheme == "rainbow"){
 					 	this.colorRainbow(angle); // 4
 					} else if(this.colorScheme == "funcolors") {
-						this.blue = 154; // random?
-						this.green = 75; // random?
 						this.red = this.funColors(angle); // makes degradation	
 					} else {
 						this.blue = 0; //1

@@ -53,11 +53,12 @@
   					<option value="degradation">Color degradation</option>
   					<option value="greyDegradation">Monochrome degradation</option>
   					<option value="funcolors">Fun colors</option>
+  					<option value="rainbow">Rainbow</option>
   					<option value="default" selected="true">Default</option>
 				</select>
 				<div id="inputColorClass">
 				<select id="inputColor">
-  					<option value="red">Red</option>
+  					<option value="red" selected="true">Red</option>
   					<option value="green">Green</option>
   					<option value="blue">Blue</option>
 				</select>
@@ -77,24 +78,30 @@
 				CurveDrawer.movingCircleRadius = parseFloat(eval(document.getElementById("inputMovingCircleRadius").value));
 				CurveDrawer.distanceDrawingTip = parseFloat(eval(document.getElementById("inputDistanceDrawingTip").value));
 				CurveDrawer.clearCanvas = document.getElementById("inputClearCanvas").checked;
-				
+				CurveDrawer.colorScheme = document.getElementById("inputColorScheme").options[document.getElementById("inputColorScheme").selectedIndex].value;
+				CurveDrawer.colorDegradation = document.getElementById("inputColor").options[document.getElementById("inputColor").selectedIndex].value;
+		
 				CurveDrawer.draw();
 			}
 		
 			function showHideColors(){
+			
 				var selectedColorScheme = document.getElementById("inputColorScheme").options[document.getElementById("inputColorScheme").selectedIndex].value;
-				alert(selectedColorScheme == "degradation");
+				
 				if(selectedColorScheme == "degradation") {
-					document.getElementById("inputColorClass").visibility = "visible";
+					CurveDrawer.red = 255;
+					CurveDrawer.blue = 255;
+					CurveDrawer.green = 255;
+					document.getElementById("inputColorClass").style.visibility = "visible";
 				} else {
-					document.getElementById("inputColorClass").visibility = "hidden";
+					document.getElementById("inputColorClass").style.visibility = "hidden";
 				}
 			}	
 		
 			var CurveDrawer = 
 			{
 				canvasSize : 500,			
-				canvasColor : '#F0F',
+				canvasColor : '#FFF',
 				clearCanvas : true,
 				
 				// amplification of view
@@ -121,6 +128,7 @@
 				strokeWidth : 1,
 				
 				colorScheme : 'default',
+				colorDegradation : 'red',
 
 			    paper : Raphael("canvas_container", this.canvasSize, this.canvasSize),
 	
@@ -200,18 +208,19 @@
 					return color;
 				},
 			
-				colorDegradation: function (angle, skipColor){
+				degradateColor: function (angle){
+					
 					var color = this.funColors(angle);
 				
-					if(skipColor != "blue") {
+					if(this.colorDegradation != "blue") {
 						this.blue = color;
 					}
 				
-					if(skipColor != "green") {	
+					if(this.colorDegradation != "green") {	
 						this.green = color;	
 					}
 				
-					if(skipColor != "red") {			
+					if(this.colorDegradation != "red") {			
 						this.red = color;
 					}
 				},
@@ -227,21 +236,11 @@
 					var lastPoint = firstPoint;
 					var angle = this.rotation;
 					var keepOnDrawing = true;
-					
-					//this.blue = 154; //1
-					//this.green = 75; //1
-					
+										
 					do {
 						var currentPoint = this.calculatePoint(angle);
 						
-						//this.red = this.funColors(angle); //1
-						
-						//this.colorDegradation(angle, "green"); // 2
-						
-						//this.greyscaleDegradation(angle); // 3
-						
-						// this.colorRainbow(angle); // 4
-					
+						this.applyColorScheme(angle);					
 						var color = "rgb(" + this.red + ", " + this.green + ", " + this.blue + ")";
 					
 						this.drawLine(lastPoint[0], lastPoint[1], currentPoint[0], currentPoint[1], color);
@@ -253,6 +252,25 @@
 							lastPoint = currentPoint;
 						}
 					} while(keepOnDrawing);	
+				},
+				
+				applyColorScheme: function(angle){
+					
+					if(this.colorScheme == "degradation") {
+						this.degradateColor(angle); // 2
+					} else if(this.colorScheme == "greyDegradation") {
+						this.greyscaleDegradation(angle); // 3
+					}  else if(this.colorScheme == "rainbow"){
+					 	this.colorRainbow(angle); // 4
+					} else if(this.colorScheme == "funcolors") {
+						this.blue = 154; // random?
+						this.green = 75; // random?
+						this.red = this.funColors(angle); // makes degradation	
+					} else {
+						this.blue = 0; //1
+						this.green = 0; //1
+						this.red = 0; //1	
+					}
 				}				
 			};
 		</script>

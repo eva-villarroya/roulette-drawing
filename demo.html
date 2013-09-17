@@ -239,6 +239,12 @@
 					var lastPoint = firstPoint;
 					var angle = this.rotation;
 					var keepOnDrawing = true;
+					
+					if(this.colorScheme == "funcolors") {
+						this.blue = Math.floor((Math.random()*256)); 
+						this.green = Math.floor((Math.random()*256));
+
+					}
 										
 					do {
 						var currentPoint = this.calculatePoint(angle);
@@ -266,8 +272,6 @@
 					}  else if(this.colorScheme == "rainbow"){
 					 	this.colorRainbow(angle); // 4
 					} else if(this.colorScheme == "funcolors") {
-						this.blue = 154; // random?
-						this.green = 75; // random?
 						this.red = this.funColors(angle); // makes degradation	
 					} else {
 						this.blue = 0; //1

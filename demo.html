@@ -42,7 +42,7 @@
 	<header>
 	<body onLoad="updateDrawing();">
 		<div id="cockpit_container">
-			<form id="cockpit">
+			<form id="cockpit_container">
 			<h3>Cockpit</h3>
 			<p>Zoom: <input type="text" id="inputZoom" value="150"/></p>
 			<p>Static circle radius: <input type="text" id="inputStaticCircleRadius" value="1"/></p>
@@ -72,6 +72,7 @@
 			<input type="submit" id="applyChanges" onClick="updateDrawing(); return false;"/><input type="reset" id="resetChanges"/>
 			</form>
 		</div>
+
 		<div id="canvas_container"></div>
 		
 		<script type="text/javascript">
@@ -175,10 +176,16 @@
 			    		"L", nextX + this.centerCanvasX, nextY + this.centerCanvasY]);
 			    	line.attr ("stroke", color);
 			    	line.attr("stroke-width", this.strokeWidth);
-			    	this.paper.rotate(10);
+				},
+				
+				drawPolygon: function (allPoints){	
+			    	var line = this.paper.path(allPoints);
+			    	line.strokeLinearGradient ("grad1", 10);
+			    	line.attr("stroke-width", this.strokeWidth);
 				},
 			
-				colorRainbow: function (angle) {
+				rainbowColors: function (angle) {
+					
 					this.blue = (angle * 2) % 255;
 					this.green = (angle * 2) % 510;
 				
@@ -189,7 +196,8 @@
 					this.red = (angle * 4) % 255;
 				},
 			
-				greyscaleDegradation: function (angle){
+				greyscaleColors: function (angle){
+					
 					this.blue = angle % 510;
 						
 					if(this.blue > 254) {
@@ -208,8 +216,27 @@
 						this.red = 510 - this.red;
 					}
 				},
+				
+				applyColorDegradation: function(colorMilestones) {
+					
+					var linearGradient = new Array();
+					
+					for(i = 0; i < colorMilestones.length; i++){
+						var stepColor = new Object();
+						stepColor.id = "s" + (i + 1);
+						stepColor.offset = "" + i;
+						stepColor.style = "stop-color:" + colorMilestones[i] + ";stop-opacity:1;";
+						
+						linearGradient[i] = stepColor;
+					}
+					
+					//console.log(linearGradient);
+					
+					this.paper.defineLinearGradient("grad1", linearGradient);				
+				},
 			
 				funColors: function (angle) {
+					
 					var module = 420;	
 					var color = angle % module;
 				
@@ -237,6 +264,10 @@
 					}
 				},
 				
+				rgbToHex : function(r, g, b) {
+    				return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+				},
+				
 				draw: function (){
 					if(this.clearCanvas) {
 						this.paper.clear(); 
@@ -253,14 +284,22 @@
 						this.blue = Math.floor((Math.random()*256)); 
 						this.green = Math.floor((Math.random()*256));
 					}
+					
+					var pointsArray = new Array();
+					var colorsArray = new Array();
+					
+					var i = 0;
 										
 					do {
+						this.applyColorScheme(angle);
+						colorsArray[i] = [parseInt(this.red.toString(),10), parseInt(this.green.toString(),10), parseInt(this.blue.toString(),10)];
+						//console.log("colorsArray " + colorsArray[i]);
 						var currentPoint = this.calculatePoint(angle);
 						
-						this.applyColorScheme(angle);					
-						var color = "rgb(" + this.red + ", " + this.green + ", " + this.blue + ")";
-					
-						this.drawLine(lastPoint[0], lastPoint[1], currentPoint[0], currentPoint[1], color);
+						pointsArray[i] = " L " +  (currentPoint[0] + this.centerCanvasX) + ":" + (currentPoint[1] + this.centerCanvasY);
+						pointsArray[i+1] = " L " + (lastPoint[0] + this.centerCanvasX) + ":" + (lastPoint[1] + this.centerCanvasX);
+						
+						i+=2;
 										
 						keepOnDrawing = (currentPoint[0] != firstPoint[0]) || (currentPoint[1] != firstPoint[1]);
 					
@@ -269,16 +308,38 @@
 							lastPoint = currentPoint;
 						}
 					} while(keepOnDrawing);	
+					
+					var mileStones = 10;
+					var colorMil = new Array();
+					
+					for(i = 0; i < mileStones; i++){
+						var position = Math.floor(Math.random() * colorsArray.length);
+						
+						while (colorsArray[position] == undefined) {
+							position = Math.floor(Math.random() * colorsArray.length);
+						}
+						
+						var rgb = colorsArray[position][2] | (colorsArray[position][1] << 8) | (colorsArray[position][0] << 16);
+						colorMil[i] = '#' + rgb.toString(16);
+					}
+					
+					this.applyColorDegradation(colorMil);
+					
+					var arrayToSVG = pointsArray.toString().replace(/^ L/, 'M');
+					arrayToSVG = arrayToSVG.replace(/,/g, '');
+					arrayToSVG = arrayToSVG.replace(/:/g, ',');
+					
+					this.drawPolygon(arrayToSVG);
+					
 				},
 				
 				applyColorScheme: function(angle){
-					
 					if(this.colorScheme == "degradation") {
 						this.degradateColor(angle); // 2
 					} else if(this.colorScheme == "greyDegradation") {
-						this.greyscaleDegradation(angle); // 3
+						this.greyscaleColors(angle); // 3
 					}  else if(this.colorScheme == "rainbow"){
-					 	this.colorRainbow(angle); // 4
+					 	this.rainbowColors(angle); // 4
 					} else if(this.colorScheme == "funcolors") {
 						this.red = this.funColors(angle); // makes degradation	
 					} else {
@@ -288,6 +349,69 @@
 					}
 				}				
 			};
+			
+			// this code taken from http://stackoverflow.com/questions/4771517/raphael-js-path-line-with-gradient/11053049#11053049
+			// all credits to http://stackoverflow.com/users/727551/bathz
+			/*global Raphael:true*/
+			(function() {
+    			if (Raphael.vml) {
+        			Raphael.el.strokeLinearGradient = function() {
+            			// not supporting VML yet
+            			return this; // maintain chainability
+        			};
+    			} else {
+        			var setAttr = function(el, attr) {
+            		var key;
+            		if (attr) {
+                		for (key in attr) {
+                    		if (attr.hasOwnProperty(key)) {
+                        		el.setAttribute(key, attr[key]);
+                    		}
+                		}
+            		} else {
+                		return document.createElementNS("http://www.w3.org/2000/svg", el);
+            		}
+            		return null;
+        		};
+
+        		var defLinearGrad = function(defId, stops) {
+            		var def = setAttr("linearGradient");
+            		var i, l;
+            		def.id = defId;
+
+            		for (i = 0, l = stops.length; i < l; i += 1) {
+                		var stopEle = setAttr("stop");
+                		var stop = stops[i];
+                		setAttr(stopEle, stop);
+                		def.appendChild(stopEle);
+            		}
+            		return def;
+        		};
+
+        		Raphael.el.strokeLinearGradient = function(defId, width, stops) {
+            		if (stops) {
+                		this.paper.defs.appendChild(defLinearGrad(defId, stops));
+            		}
+
+            		setAttr(this.node, {
+                		"stroke": "url(#" + defId + ")",
+                		"stroke-width": width
+            		});
+            		return this; // maintain chainability
+        		};
+
+        		Raphael.st.strokeLinearGradient = function(defId, width, stops) {
+            		return this.forEach(function(el) {
+                		el.strokeLinearGradient(defId, width, stops);
+            		});
+        		};
+
+        		Raphael.fn.defineLinearGradient = function(defId, stops) {
+            		this.defs.appendChild(defLinearGrad(defId, stops));
+        		};
+    		}
+		}());
+		
 		</script>
 	</body>
 </html>
